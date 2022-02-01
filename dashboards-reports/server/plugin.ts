@@ -10,6 +10,9 @@ import {
   Plugin,
   Logger,
   ILegacyClusterClient,
+  SavedObjectsClient,
+  ISavedObjectsRepository,
+  IUiSettingsClient,
 } from '../../../src/core/server';
 import { setIntervalAsync } from 'set-interval-async/dynamic';
 import { Semaphore, SemaphoreInterface, withTimeout } from 'async-mutex';
@@ -28,6 +31,7 @@ import { ReportingConfig } from './config/config';
 export interface ReportsPluginRequestContext {
   logger: Logger;
   opensearchClient: ILegacyClusterClient;
+  uiSettingsClient: IUiSettingsClient;
 }
 //@ts-ignore
 declare module 'kibana/server' {
@@ -45,6 +49,8 @@ export class ReportsDashboardsPlugin
     ReportingConfigType
   >;
   private reportingConfig?: ReportingConfig;
+  private savedObjectsClient?: ISavedObjectsRepository;
+  private uiSettingsClient?: IUiSettingsClient;
 
   constructor(context: PluginInitializerContext<ReportingConfigType>) {
     this.logger = context.logger.get();
@@ -93,7 +99,8 @@ export class ReportsDashboardsPlugin
     );
 
     // Register server side APIs
-    registerRoutes(router, this.reportingConfig);
+    const getUiSettingsClient = () => this.uiSettingsClient;
+    registerRoutes(router, this.reportingConfig, getUiSettingsClient);
 
     // put logger into route handler context, so that we don't need to pass through parameters
     core.http.registerRouteHandlerContext(
@@ -127,9 +134,9 @@ export class ReportsDashboardsPlugin
     setIntervalAsync provides the same familiar interface as built-in setInterval for asynchronous functions,
     while preventing multiple executions from overlapping in time.
     Polling at at a 5 min fixed interval
-    
+
     TODO: need further optimization polling with a mix approach of
-    random delay and dynamic delay based on the amount of jobs. 
+    random delay and dynamic delay based on the amount of jobs.
     */
     // setIntervalAsync(
     //   pollAndExecuteJob,
@@ -139,6 +146,13 @@ export class ReportsDashboardsPlugin
     //   opensearchClient,
     //   this.logger
     // );
+
+    // TAIPN-140: we need to access the uiSettings from the server.
+    const { savedObjects, uiSettings } = core;
+    this.savedObjectsClient = savedObjects.createInternalRepository();
+    const savedObjectsClient = new SavedObjectsClient(this.savedObjectsClient);
+    this.uiSettingsClient = uiSettings.asScopedToClient(savedObjectsClient);
+
     return {};
   }
 

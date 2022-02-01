@@ -13,6 +13,7 @@ import {
   Filter,
   Query,
 } from '../../../../../src/plugins/data/common';
+import {IUiSettingsClient} from "../../../../../src/core/server";
 
 export var metaData = {
   saved_search_id: <string>null,
@@ -49,16 +50,22 @@ export const getSelectedFields = async (columns) => {
 
 // Build the OpenSearch query from the meta data
 // is_count is set to 1 if we building the count query but 0 if we building the fetch data query
-export const buildRequestBody = (report: any, is_count: number) => {
+export const buildRequestBody = async (report: any, is_count: number, uiSettingClient: IUiSettingsClient | undefined) => {
   let esbBoolQuery = esb.boolQuery();
   const searchSourceJSON = report._source.searchSourceJSON;
 
   const savedObjectQuery: Query = JSON.parse(searchSourceJSON).query;
   const savedObjectFilter: Filter = JSON.parse(searchSourceJSON).filter;
+  const queryOptions = await uiSettingClient?.get('query:queryString:options');
   const QueryFromSavedObject = buildOpenSearchQuery(
     undefined,
     savedObjectQuery,
-    savedObjectFilter
+    savedObjectFilter,
+    {
+      allowLeadingWildcards: true,
+      queryStringOptions: JSON.parse(queryOptions),
+      ignoreFilterIfFieldNotInIndex: true,
+    }
   );
   // Add time range
   if (report._source.timeFieldName && report._source.timeFieldName.length > 0) {

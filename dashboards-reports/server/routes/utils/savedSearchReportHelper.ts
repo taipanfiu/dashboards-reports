@@ -12,7 +12,7 @@ import {
 } from './dataReportHelpers';
 import {
   ILegacyClusterClient,
-  ILegacyScopedClusterClient,
+  ILegacyScopedClusterClient, IUiSettingsClient,
   Logger,
 } from '../../../../../src/core/server';
 import { getFileName, callCluster } from './helpers';
@@ -31,7 +31,8 @@ export async function createSavedSearchReport(
   dateFormat: string,
   csvSeparator: string,
   isScheduledTask: boolean = true,
-  logger: Logger
+  logger: Logger,
+  uiSettingClient: IUiSettingsClient | undefined
 ): Promise<CreateReportResultType> {
   const params = report.report_definition.report_params;
   const reportFormat = params.core_params.report_format;
@@ -44,7 +45,8 @@ export async function createSavedSearchReport(
     dateFormat,
     csvSeparator,
     isScheduledTask,
-    logger
+    logger,
+    uiSettingClient
   );
 
   const curTime = new Date();
@@ -131,21 +133,22 @@ async function generateReportData(
   dateFormat: string,
   csvSeparator: string,
   isScheduledTask: boolean,
-  logger: Logger
+  logger: Logger,
+  uiSettingClient: IUiSettingsClient | undefined
 ) {
   let opensearchData: any = {};
   const arrayHits: any = [];
   const report = { _source: metaData };
   const indexPattern: string = report._source.paternName;
   const maxResultSize: number = await getMaxResultSize();
-  const opensearchCount = await getOpenSearchDataSize();
+  const opensearchCount = await getOpenSearchDataSize(uiSettingClient);
 
   const total = Math.min(opensearchCount.count, params.limit);
   if (total === 0) {
     return '';
   }
 
-  const reqBody = buildRequestBody(report, 0);
+  const reqBody = await buildRequestBody(report, 0, uiSettingClient);
   logger.info(
     `[Reporting csv module] DSL request body: ${JSON.stringify(reqBody)}`
   );
@@ -181,8 +184,8 @@ async function generateReportData(
   }
 
   // Build the OpenSearch Count query to count the size of result
-  async function getOpenSearchDataSize() {
-    const countReq = buildRequestBody(report, 1);
+  async function getOpenSearchDataSize(uiSettingClient: IUiSettingsClient | undefined) {
+    const countReq = await buildRequestBody(report, 1, uiSettingClient);
     return await callCluster(
       client,
       'count',

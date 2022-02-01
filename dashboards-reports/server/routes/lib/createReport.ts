@@ -15,7 +15,7 @@ import {
   ILegacyScopedClusterClient,
   OpenSearchDashboardsRequest,
   Logger,
-  RequestHandlerContext,
+  RequestHandlerContext, IUiSettingsClient,
 } from '../../../../../src/core/server';
 import { createSavedSearchReport } from '../utils/savedSearchReportHelper';
 import { ReportSchemaType } from '../../model';
@@ -33,7 +33,8 @@ export const createReport = async (
   context: RequestHandlerContext,
   report: ReportSchemaType,
   config: ReportingConfig,
-  savedReportId?: string
+  uiSettingClient: IUiSettingsClient | undefined,
+  savedReportId?: string,
 ): Promise<CreateReportResultType> => {
   const isScheduledTask = false;
   //@ts-ignore
@@ -81,7 +82,8 @@ export const createReport = async (
         dateFormat,
         csvSeparator,
         isScheduledTask,
-        logger
+        logger,
+        uiSettingClient
       );
     } else {
       // report source can only be one of [saved search, visualization, dashboard, notebook]

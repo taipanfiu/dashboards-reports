@@ -9,7 +9,7 @@ import {
   IOpenSearchDashboardsResponse,
   ResponseError,
   Logger,
-  ILegacyScopedClusterClient,
+  ILegacyScopedClusterClient, IUiSettingsClient,
 } from '../../../../src/core/server';
 import { API_PREFIX } from '../../common';
 import { createReport } from './lib/createReport';
@@ -23,7 +23,7 @@ import { addToMetric } from './utils/metricHelper';
 import { validateReport } from '../../server/utils/validationHelper';
 import { ReportingConfig } from 'server';
 
-export default function (router: IRouter, config: ReportingConfig) {
+export default function (router: IRouter, config: ReportingConfig, getUiSettingsClient: () => IUiSettingsClient | undefined) {
   const protocol = config.get('osd_server', 'protocol');
   const hostname = config.get('osd_server', 'hostname');
   const port = config.get('osd_server', 'port');
@@ -65,7 +65,7 @@ export default function (router: IRouter, config: ReportingConfig) {
       }
 
       try {
-        const reportData = await createReport(request, context, report, config);
+        const reportData = await createReport(request, context, report, config, getUiSettingsClient());
 
         // if not deliver to user himself , no need to send actual file data to client
         const delivery = report.report_definition.delivery;
@@ -164,6 +164,7 @@ export default function (router: IRouter, config: ReportingConfig) {
           timezone: schema.string(),
           dateFormat: schema.string(),
           csvSeparator: schema.string(),
+          queryStringOptions: schema.maybe(schema.string())
         }),
       },
     },
