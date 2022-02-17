@@ -154,6 +154,8 @@ export const createVisualReport = async (
   await addReportHeader(page, reportHeader);
   await addReportFooter(page, reportFooter);
 
+  //const pageContent = await page.content();
+
   // create pdf or png accordingly
   if (reportFormat === FORMAT.pdf) {
     const scrollHeight = await page.evaluate(
@@ -179,6 +181,7 @@ export const createVisualReport = async (
   const fileName = `${getFileName(reportName, curTime)}.${reportFormat}`;
   await browser.close();
 
+  //logger.info(`page content ${pageContent}`);
   return { timeCreated, dataUrl: buffer.toString('base64'), fileName };
 };
 
@@ -216,21 +219,21 @@ const addReportHeader = async (page: puppeteer.Page, header: string) => {
 };
 
 const addReportFooter = async (page: puppeteer.Page, footer: string) => {
-  const headerHtml = fs
+  const footerHtml = fs
     .readFileSync(`${__dirname}/footer_template.html`)
     .toString()
     .replace('<!--CONTENT-->', footer);
 
   await page.evaluate(
     /* istanbul ignore next */
-    (headerHtml: string) => {
-      const content = document.body.firstChild;
-      const headerContainer = document.createElement('div');
-      headerContainer.className = 'reportWrapper';
-      headerContainer.innerHTML = headerHtml;
-      content?.parentNode?.insertBefore(headerContainer, null);
+    (footerHtml: string) => {
+      const content = document.body;
+      const footerContainer = document.createElement('div');
+      footerContainer.className = 'reportWrapper-footer';
+      footerContainer.innerHTML = footerHtml;
+      content?.appendChild(footerContainer);
     },
-    headerHtml
+    footerHtml
   );
 };
 

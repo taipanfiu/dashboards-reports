@@ -11,6 +11,14 @@ body {
   background-color: #fafbfd;
 }
 
+.reportWrapper-footer {
+  padding: 8px;
+  background-color: #fafbfd;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
 /* Notice that I'm using an ID of #reportingHeader, and #reportingFooter, instead of a classname (.reportingHeader, .reportingFooter). This is
   in order to force specificity here higher in case any other styles would conflict */
 #reportingHeader,
@@ -87,12 +95,11 @@ body {
   margin-top: inherit;
   margin-bottom: inherit;
 }
-</style>
-  <style>
-    /* mde style sheet*/
-  .mde-preview .mde-preview-content {
-    padding: 10px;
-  }
+
+/* mde style sheet*/
+.mde-preview .mde-preview-content {
+  padding: 10px;
+}
 .mde-preview .mde-preview-content p,
 .mde-preview .mde-preview-content blockquote,
 .mde-preview .mde-preview-content ul,
